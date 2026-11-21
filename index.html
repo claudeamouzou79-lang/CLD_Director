@@ -699,5 +699,34 @@
       `).join("") || `<tr><td colspan="5" class="muted">Aucune commission enregistrée.</td></tr>`;
     }
   </script>
+  <script>
+  const FIREBASE_DB_URL = "https://cld-finance-3a89f-default-rtdb.firebaseio.com";
+
+  // Appelle cette fonction quand tu cliques sur "Enregistrer / Publier" dans le QG Directeur
+  async function publierVersSiteClient(donneesConfig) {
+    try {
+      const response = await fetch(`${FIREBASE_DB_URL}/config.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...donneesConfig,
+          updatedAt: Date.now()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP ${response.status}`);
+      }
+
+      const resultat = await response.json();
+      console.log("Synchronisation réussie :", resultat);
+      alert("Modifications synchronisées avec le site client !");
+    } catch (erreur) {
+      console.error("Échec de la synchronisation :", erreur);
+      alert("Erreur lors de la mise à jour Firebase.");
+    }
+  }
+</script>
+
 </body>
 </html>
