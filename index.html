@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CLD_Director — Panneau de Contrôle</title>
+  <style>
+    :root {
+      --bg: #080c14;
+      --card: #111827;
+      --border: #1f2937;
+      --primary: #f3ba2f;
+      --primary-dark: #d9a01b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --info: #38bdf8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); line-height: 1.5; padding-bottom: 60px; }
+
+    header {
+      max-width: 1180px; margin: 0 auto; padding: 18px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px;
+    }
+    .logo { font-size: 1.35rem; font-weight: 800; }
+    .logo span { color: var(--primary); }
+    .badge {
+      background: rgba(16, 185, 129, 0.15); color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.35); padding: 5px 12px;
+      border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+    }
+
+    .container { max-width: 1180px; margin: 0 auto; padding: 20px; }
+
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn {
+      background: var(--card); color: var(--muted); border: 1px solid var(--border);
+      padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 600;
+    }
+    .tab-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; margin-bottom: 18px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    }
+    .stat-card span { font-size: 0.8rem; color: var(--muted); display: block; }
+    .stat-card strong { font-size: 1.35rem; color: var(--primary); }
+
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 0.84rem; color: var(--muted); margin-bottom: 4px; }
+    input, select {
+      width: 100%; padding: 10px 12px; border-radius: 8px;
+      border: 1px solid var(--border); background: #080c14; color: var(--text); font-size: 0.92rem;
+    }
+
+    .btn {
+      background: var(--primary); color: #000; border: none; padding: 12px 16px;
+      border-radius: 9px; font-weight: 700; cursor: pointer; font-size: 0.92rem;
+    }
+    .btn:hover { background: var(--primary-dark); }
+    .btn-sm {
+      padding: 6px 9px; font-size: 0.78rem; border-radius: 6px;
+      cursor: pointer; border: none; font-weight: 600;
+    }
+    .btn-green { background: var(--success); color: #000; }
+    .btn-red { background: var(--danger); color: #fff; }
+    .btn-blue { background: var(--info); color: #000; }
+    .btn-gray { background: #334155; color: #fff; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th, td { padding: 10px 9px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th { color: var(--muted); font-weight: 600; }
+    .table-wrap { overflow-x: auto; }
+    .status-msg { margin-top: 10px; font-weight: 600; font-size: 0.9rem; }
+    .vip-block {
+      background: #080c14; border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+    }
+    .vip-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px; color: var(--primary); font-weight: 700;
+    }
+    .vip-amount-badge {
+      background: rgba(243, 186, 47, 0.15); color: var(--primary);
+      padding: 2px 8px; border-radius: 999px; font-size: 0.78rem;
+    }
+    .pill-ok {
+      background: rgba(16, 185, 129, 0.15); color: var(--success);
+      padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+    }
+    .pill-ban {
+      background: rgba(239, 68, 68, 0.18); color: #fca5a5;
+      padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+    }
+    .toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+    }
+    .toolbar input { max-width: 340px; margin-bottom: 0; }
+    .quick-reset-row {
+      display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 10px; align-items: end;
+    }
+    @media (max-width: 720px) {
+      .quick-reset-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">CLD_<span>Director</span></div>
+    <div class="badge" id="dirStatus">Connexion Firebase...</div>
+  </header>
+
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span>Membres inscrits</span>
+        <strong id="statUsers">0</strong>
+      </div>
+      <div class="stat-card">
+        <span>Dépôts reçus</span>
+        <strong id="statDepositsCount">0</strong>
+      </div>
+      <div class="stat-card">
+        <span>Volume total déposé</span>
+        <strong id="statDepositsTotal">0 $</strong>
+      </div>
+      <div class="stat-card">
+        <span>Retraits clients</span>
+        <strong id="statWithdrawStatus">Actif 24h/24</strong>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('configTab', this)">Configuration & VIP 1–5</button>
+      <button class="tab-btn" onclick="switchTab('usersTab', this)">Membres & Reset 1 clic</button>
+      <button class="tab-btn" onclick="switchTab('depositsTab', this)">Dépôts en direct</button>
+      <button class="tab-btn" onclick="switchTab('withdrawalsTab', this)">Retraits</button>
+    </div>
+
+    <!-- ONGLET 1 : CONFIGURATION GLOBALE & VIP 1 A 5 -->
+    <div id="configTab" class="section active">
+      <div class="box">
+        <h3 style="margin-bottom: 14px;">Paramètres Généraux (Effet immédiat sur le site client)</h3>
+        <div class="grid">
+          <div class="form-group">
+            <label>Bannière d'annonce en haut du site</label>
+            <input type="text" id="cfgBanner" />
+          </div>
+          <div class="form-group">
+            <label>Adresse de réception BEP20 (BNB Smart Chain)</label>
+            <input type="text" id="cfgBep20" />
+          </div>
+          <div class="form-group">
+            <label>Commission Parrain (%)</label>
+            <input type="number" id="cfgComm" min="0" max="100" step="any" />
+          </div>
+          <div class="form-group">
+            <label>Devise affichée (ex: $ ou USDT)</label>
+            <input type="text" id="cfgCurrency" />
+          </div>
+          <div class="form-group">
+            <label>Disponibilité des retraits pour les clients</label>
+            <select id="cfgWithdrawEnabled">
+              <option value="true">Autorisé à tout moment (24h/24, 7j/7)</option>
+              <option value="false">Suspendu temporairement</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Crédit automatique de la commission parrain</label>
+            <select id="cfgAutoComm">
+              <option value="true">Activé automatiquement au dépôt</option>
+              <option value="false">Manuel (depuis l'onglet Membres)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h3 style="margin-bottom: 6px;">Noms et Sommes de tous les VIP (VIP 1 à VIP 5)</h3>
+        <p style="color:var(--muted); font-size:0.86rem; margin-bottom:14px;">
+          Les sommes de chaque VIP sont affichées ici : renomme un VIP ou change sa somme puis clique sur enregistrer pour mettre à jour les clients immédiatement.
+        </p>
+
+        <div class="grid">
+          <div class="vip-block">
+            <div class="vip-head">
+              <span>Niveau 1</span>
+              <span class="vip-amount-badge" id="badgeVip1">10 $</span>
+            </div>
+            <div class="form-group">
+              <label>Nom du VIP 1</label>
+              <input type="text" id="vip1Name" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Somme / Montant minimum VIP 1</label>
+              <input type="number" id="vip1Min" step="any" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Produit / Avantage VIP 1</label>
+              <input type="text" id="vip1Product" />
+            </div>
+          </div>
+
+          <div class="vip-block">
+            <div class="vip-head">
+              <span>Niveau 2</span>
+              <span class="vip-amount-badge" id="badgeVip2">20 $</span>
+            </div>
+            <div class="form-group">
+              <label>Nom du VIP 2</label>
+              <input type="text" id="vip2Name" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Somme / Montant minimum VIP 2</label>
+              <input type="number" id="vip2Min" step="any" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Produit / Avantage VIP 2</label>
+              <input type="text" id="vip2Product" />
+            </div>
+          </div>
+
+          <div class="vip-block">
+            <div class="vip-head">
+              <span>Niveau 3</span>
+              <span class="vip-amount-badge" id="badgeVip3">40 $</span>
+            </div>
+            <div class="form-group">
+              <label>Nom du VIP 3</label>
+              <input type="text" id="vip3Name" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Somme / Montant minimum VIP 3</label>
+              <input type="number" id="vip3Min" step="any" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Produit / Avantage VIP 3</label>
+              <input type="text" id="vip3Product" />
+            </div>
+          </div>
+
+          <div class="vip-block">
+            <div class="vip-head">
+              <span>Niveau 4</span>
+              <span class="vip-amount-badge" id="badgeVip4">80 $</span>
+            </div>
+            <div class="form-group">
+              <label>Nom du VIP 4</label>
+              <input type="text" id="vip4Name" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Somme / Montant minimum VIP 4</label>
+              <input type="number" id="vip4Min" step="any" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Produit / Avantage VIP 4</label>
+              <input type="text" id="vip4Product" />
+            </div>
+          </div>
+
+          <div class="vip-block">
+            <div class="vip-head">
+              <span>Niveau 5</span>
+              <span class="vip-amount-badge" id="badgeVip5">160 $</span>
+            </div>
+            <div class="form-group">
+              <label>Nom du VIP 5</label>
+              <input type="text" id="vip5Name" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Somme / Montant minimum VIP 5</label>
+              <input type="number" id="vip5Min" step="any" oninput="updateVipBadges()" />
+            </div>
+            <div class="form-group">
+              <label>Produit / Avantage VIP 5</label>
+              <input type="text" id="vip5Product" />
+            </div>
+          </div>
+        </div>
+
+        <button class="btn" style="margin-top: 16px; width: 100%;" onclick="saveAllConfig()">
+          Enregistrer & Appliquer immédiatement chez les clients
+        </button>
+        <div id="saveMsg" class="status-msg"></div>
+      </div>
+    </div>
+
+    <!-- ONGLET 2 : MEMBRES & RESET 1 CLIC -->
+    <div id="usersTab" class="section">
+      <div class="box">
+        <h3 style="margin-bottom: 8px;">Réinitialisation rapide du mot de passe (1 clic)</h3>
+        <p style="color:var(--muted); font-size:0.85rem; margin-bottom:12px;">
+          Saisis l'identifiant (ou code) du compte que le client t'a donné, choisis le nouveau mot de passe (ex. <code>1234</code>), puis clique sur le bouton.
+        </p>
+        <div class="quick-reset-row">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Compte du client (identifiant ou code)</label>
+            <input type="text" id="quickResetAccount" placeholder="Ex: client_jean ou REF123" />
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Nouveau mot de passe</label>
+            <input type="text" id="quickResetPassword" value="1234" />
+          </div>
+          <button class="btn btn-blue" onclick="quickResetPassword()">Réinitialiser en 1 clic</button>
+        </div>
+        <div id="quickResetMsg" class="status-msg"></div>
+      </div>
+
+      <div class="box">
+        <div class="toolbar">
+          <h3>Liste des membres</h3>
+          <input type="text" id="userSearch" placeholder="Filtrer par compte ou code..." oninput="renderUsers()" />
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Identifiant</th>
+                <th>Statut</th>
+                <th>Code Parrain</th>
+                <th>Parrainé par</th>
+                <th>Solde</th>
+                <th>Commissions</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ONGLET 3 : DÉPÔTS EN TEMPS RÉEL -->
+    <div id="depositsTab" class="section">
+      <div class="box">
+        <h3 style="margin-bottom: 12px;">Historique des dépôts clients (Temps réel)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Montant</th>
+                <th>Niveau débloqué</th>
+                <th>TxID / Hash</th>
+                <th>Parrain / Comm.</th>
+              </tr>
+            </thead>
+            <tbody id="depositsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ONGLET 4 : RETRAITS -->
+    <div id="withdrawalsTab" class="section">
+      <div class="box">
+        <h3 style="margin-bottom: 12px;">Demandes de retrait des clients</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Montant</th>
+                <th>Adresse BEP20</th>
+                <th>Statut</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="withdrawalsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DB_BASE = "https://cld-finance-3a89f-default-rtdb.firebaseio.com";
+
+    let currentConfig = {
+      bannerText: "CLD FINANCE — Inscription libre, dépôt à tout moment, retraits ouverts & accès VIP automatique",
+      currency: "$",
+      bep20Address: "0x0000000000000000000000000000000000000000",
+      commissionRate: 10,
+      autoCommission: true,
+      withdrawEnabled: true,
+      vip1Name: "VIP 1",
+      vip2Name: "VIP 2",
+      vip3Name: "VIP 3",
+      vip4Name: "VIP 4",
+      vip5Name: "VIP 5",
+      vip1Min: 10,
+      vip2Min: 20,
+      vip3Min: 40,
+      vip4Min: 80,
+      vip5Min: 160,
+      vip1Product: "Pack Produits VIP 1 — Accès & Catalogue Essentiel",
+      vip2Product: "Pack Produits VIP 2 — Accès & Catalogue Avancé",
+      vip3Product: "Pack Produits VIP 3 — Accès & Catalogue Pro",
+      vip4Product: "Pack Produits VIP 4 — Accès & Catalogue Premium",
+      vip5Product: "Pack Produits VIP 5 — Accès & Catalogue Intégral"
+    };
+
+    let usersMap = {};
+    const processedCommissionDeposits = new Set(JSON.parse(localStorage.getItem("cld_processed_comm") || "[]"));
+
+    function updateVipBadges() {
+      const curr = document.getElementById("cfgCurrency").value.trim() || currentConfig.currency || "$";
+      for (let i = 1; i <= 5; i++) {
+        const amt = document.getElementById(`vip${i}Min`).value || 0;
+        document.getElementById(`badgeVip${i}`).textContent = `${amt} ${curr}`;
+      }
+    }
+
+    function fillConfigForm(cfg) {
+      currentConfig = { ...currentConfig, ...cfg };
+      document.getElementById("cfgBanner").value = currentConfig.bannerText || "";
+      document.getElementById("cfgBep20").value = currentConfig.bep20Address || "";
+      document.getElementById("cfgComm").value = currentConfig.commissionRate ?? 10;
+      document.getElementById("cfgCurrency").value = currentConfig.currency || "$";
+      document.getElementById("cfgAutoComm").value = String(currentConfig.autoCommission !== false);
+      const canWithdraw = currentConfig.withdrawEnabled !== false;
+      document.getElementById("cfgWithdrawEnabled").value = String(canWithdraw);
+      document.getElementById("statWithdrawStatus").textContent = canWithdraw ? "Actif 24h/24" : "En pause";
+
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById(`vip${i}Name`).value = currentConfig[`vip${i}Name`] || `VIP ${i}`;
+        document.getElementById(`vip${i}Min`).value = currentConfig[`vip${i}Min`] ?? "";
+        document.getElementById(`vip${i}Product`).value = currentConfig[`vip${i}Product`] || "";
+      }
+      updateVipBadges();
+      renderUsers();
+    }
+
+    async function saveAllConfig() {
+      const msg = document.getElementById("saveMsg");
+      const updated = {
+        bannerText: document.getElementById("cfgBanner").value.trim(),
+        bep20Address: document.getElementById("cfgBep20").value.trim(),
+        commissionRate: Number(document.getElementById("cfgComm").value) || 0,
+        currency: document.getElementById("cfgCurrency").value.trim() || "$",
+        autoCommission: document.getElementById("cfgAutoComm").value === "true",
+        withdrawEnabled: document.getElementById("cfgWithdrawEnabled").value === "true",
+        vip1Name: document.getElementById("vip1Name").value.trim() || "VIP 1",
+        vip1Min: Number(document.getElementById("vip1Min").value) || 10,
+        vip1Product: document.getElementById("vip1Product").value.trim(),
+        vip2Name: document.getElementById("vip2Name").value.trim() || "VIP 2",
+        vip2Min: Number(document.getElementById("vip2Min").value) || 20,
+        vip2Product: document.getElementById("vip2Product").value.trim(),
+        vip3Name: document.getElementById("vip3Name").value.trim() || "VIP 3",
+        vip3Min: Number(document.getElementById("vip3Min").value) || 40,
+        vip3Product: document.getElementById("vip3Product").value.trim(),
+        vip4Name: document.getElementById("vip4Name").value.trim() || "VIP 4",
+        vip4Min: Number(document.getElementById("vip4Min").value) || 80,
+        vip4Product: document.getElementById("vip4Product").value.trim(),
+        vip5Name: document.getElementById("vip5Name").value.trim() || "VIP 5",
+        vip5Min: Number(document.getElementById("vip5Min").value) || 160,
+        vip5Product: document.getElementById("vip5Product").value.trim()
+      };
+
+      try {
+        await fetch(`${DB_BASE}/config.json`, {
+          method: "PATCH",
+          body: JSON.stringify(updated)
+        });
+        fillConfigForm(updated);
+        msg.style.color = "var(--success)";
+        msg.textContent = "Noms VIP, sommes et paramètres enregistrés : mise à jour immédiate chez les clients !";
+      } catch (e) {
+        msg.style.color = "var(--danger)";
+        msg.textContent = "Erreur lors de l'enregistrement. Vérifiez votre connexion.";
+      }
+    }
+
+    function findUserEntryByAccount(accountInput) {
+      const target = String(accountInput || "").trim().toLowerCase();
+      if (!target) return null;
+      return Object.entries(usersMap).find(([id, u]) => {
+        const login = String(u.login || "").toLowerCase();
+        const code = String(u.refCode || "").toLowerCase();
+        return String(id).toLowerCase() === target || login === target || code === target;
+      }) || null;
+    }
+
+    async function quickResetPassword() {
+      const msg = document.getElementById("quickResetMsg");
+      const accountVal = document.getElementById("quickResetAccount").value.trim();
+      const newPass = document.getElementById("quickResetPassword").value.trim();
+
+      if (!accountVal) {
+        msg.style.color = "var(--danger)";
+        msg.textContent = "Entre le compte du client avant de cliquer.";
+        return;
+      }
+      if (newPass.length < 4) {
+        msg.style.color = "var(--danger)";
+        msg.textContent = "Le mot de passe doit contenir au moins 4 caractères.";
+        return;
+      }
+
+      const found = findUserEntryByAccount(accountVal);
+      if (!found) {
+        msg.style.color = "var(--danger)";
+        msg.textContent = `Aucun compte trouvé pour "${accountVal}". Vérifie l'orthographe.`;
+        return;
+      }
+
+      const [userId, userData] = found;
+      await fetch(`${DB_BASE}/users/${userId}.json`, {
+        method: "PATCH",
+        body: JSON.stringify({ password: newPass })
+      });
+
+      msg.style.color = "var(--success)";
+      msg.textContent = `Mot de passe réinitialisé en 1 clic pour "${userData.login || userId}" → nouveau mot de passe : ${newPass}`;
+    }
+
+    async function resetPasswordDirect(userId, loginName) {
+      const newPass = prompt(`Nouveau mot de passe pour "${loginName}" :`, "1234");
+      if (newPass === null) return;
+      const cleanPass = newPass.trim();
+      if (cleanPass.length < 4) {
+        alert("Minimum 4 caractères.");
+        return;
+      }
+      await fetch(`${DB_BASE}/users/${userId}.json`, {
+        method: "PATCH",
+        body: JSON.stringify({ password: cleanPass })
+      });
+      alert(`Mot de passe mis à jour pour ${loginName} : ${cleanPass}`);
+    }
+
+    async function creditSponsorIfNeeded(depositKey, dep) {
+      if (!currentConfig.autoCommission) return;
+      if (!dep || !dep.refBy || !dep.commissionAmount || Number(dep.commissionAmount) <= 0) return;
+      if (processedCommissionDeposits.has(depositKey)) return;
+
+      const sponsorEntry = Object.entries(usersMap).find(
+        ([, u]) => (u.refCode || "").toUpperCase() === String(dep.refBy).toUpperCase()
+      );
+      if (!sponsorEntry) return;
+
+      const [sponsorId, sponsor] = sponsorEntry;
+      const newComm = Number(((Number(sponsor.commission) || 0) + Number(dep.commissionAmount)).toFixed(2));
+      try {
+        await fetch(`${DB_BASE}/users/${sponsorId}.json`, {
+          method: "PATCH",
+          body: JSON.stringify({ commission: newComm })
+        });
+        processedCommissionDeposits.add(depositKey);
+        localStorage.setItem("cld_processed_comm", JSON.stringify([...processedCommissionDeposits]));
+      } catch (e) {}
+    }
+
+    function renderDeposits(data) {
+      const tbody = document.getElementById("depositsTable");
+      if (!data) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--muted);">Aucun dépôt enregistré pour le moment.</td></tr>`;
+        document.getElementById("statDepositsCount").textContent = "0";
+        document.getElementById("statDepositsTotal").textContent = `0 ${currentConfig.currency}`;
+        return;
+      }
+
+      const entries = Object.entries(data).reverse();
+      let total = 0;
+      entries.forEach(([key, d]) => {
+        total += Number(d.amount || 0);
+        creditSponsorIfNeeded(key, d);
+      });
+
+      document.getElementById("statDepositsCount").textContent = entries.length;
+      document.getElementById("statDepositsTotal").textContent = `${total.toFixed(2)} ${currentConfig.currency}`;
+
+      tbody.innerHTML = entries.map(([, d]) => `
+        <tr>
+          <td>${d.createdAt ? new Date(d.createdAt).toLocaleString("fr-FR") : "—"}</td>
+          <td><strong>${d.userLogin || d.userId}</strong></td>
+          <td style="color:var(--primary); font-weight:700;">+${d.amount} ${d.currency || "$"}</td>
+          <td>${d.vipUnlocked || "—"}</td>
+          <td style="font-family:monospace; font-size:0.8rem;">${d.txHash || "—"}</td>
+          <td>${d.refBy ? `${d.refBy} (+${d.commissionAmount || 0} ${currentConfig.currency})` : "Aucun"}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderWithdrawals(data) {
+      const tbody = document.getElementById("withdrawalsTable");
+      if (!data) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--muted);">Aucune demande de retrait pour le moment.</td></tr>`;
+        return;
+      }
+
+      const entries = Object.entries(data).reverse();
+      tbody.innerHTML = entries.map(([wId, w]) => {
+        const status = w.status || "En attente";
+        const isDone = status === "Payé" || status === "Approuvé";
+        return `
+          <tr>
+            <td>${w.createdAt ? new Date(w.createdAt).toLocaleString("fr-FR") : "—"}</td>
+            <td><strong>${w.userLogin || w.userId}</strong></td>
+            <td style="color:var(--primary); font-weight:700;">${w.amount} ${w.currency || currentConfig.currency}</td>
+            <td style="font-family:monospace; font-size:0.78rem;">${w.bep20Address || "—"}</td>
+            <td>${isDone ? `<span class="pill-ok">${status}</span>` : `<span class="pill-ban">${status}</span>`}</td>
+            <td style="display:flex; gap:6px;">
+              <button class="btn-sm btn-green" onclick="markWithdrawal('${wId}', 'Payé')">Marquer Payé</button>
+              <button class="btn-sm btn-red" onclick="markWithdrawal('${wId}', 'Refusé')">Refuser</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function markWithdrawal(wId, statusLabel) {
+      await fetch(`${DB_BASE}/withdrawals/${wId}.json`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: statusLabel })
+      });
+    }
+
+    function renderUsers(data) {
+      if (data !== undefined) {
+        usersMap = data || {};
+      }
+      const tbody = document.getElementById("usersTable");
+      const query = (document.getElementById("userSearch")?.value || "").trim().toLowerCase();
+
+      const entries = Object.entries(usersMap);
+      document.getElementById("statUsers").textContent = entries.length;
+
+      const filtered = entries.filter(([id, u]) => {
+        if (!query) return true;
+        return (
+          String(id).toLowerCase().includes(query) ||
+          String(u.login || "").toLowerCase().includes(query) ||
+          String(u.refCode || "").toLowerCase().includes(query) ||
+          String(u.refBy || "").toLowerCase().includes(query)
+        );
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--muted);">Aucun membre trouvé.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(([userId, u]) => {
+        const isSuspended = u.suspended === true;
+        const safeLogin = String(u.login || userId).replace(/'/g, "\\'");
+        return `
+          <tr>
+            <td><strong>${u.login || userId}</strong></td>
+            <td>${isSuspended ? `<span class="pill-ban">Suspendu</span>` : `<span class="pill-ok">Actif</span>`}</td>
+            <td style="font-family:monospace;">${u.refCode || "—"}</td>
+            <td>${u.refBy || "—"}</td>
+            <td style="color:var(--primary); font-weight:700;">${Number(u.balance || 0)} ${currentConfig.currency}</td>
+            <td style="color:var(--success);">${Number(u.commission || 0)} ${currentConfig.currency}</td>
+            <td style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn-sm btn-blue" onclick="resetPasswordDirect('${userId}', '${safeLogin}')">Reset MDP</button>
+              <button class="btn-sm btn-green" onclick="adjustBalance('${userId}', ${Number(u.balance || 0)})">Solde</button>
+              <button class="btn-sm btn-gray" onclick="adjustCommission('${userId}', ${Number(u.commission || 0)})">Comm.</button>
+              <button class="btn-sm ${isSuspended ? "btn-green" : "btn-red"}" onclick="toggleSuspend('${userId}', ${isSuspended})">
+                ${isSuspended ? "Réactiver" : "Suspendre"}
+              </button>
+              <button class="btn-sm btn-red" onclick="deleteUserAccount('${userId}', '${safeLogin}')">Suppr.</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function adjustBalance(userId, currentBal) {
+      const val = prompt(`Nouveau solde pour ${userId} (actuel : ${currentBal}) :`, currentBal);
+      if (val === null || isNaN(Number(val))) return;
+      await fetch(`${DB_BASE}/users/${userId}.json`, {
+        method: "PATCH",
+        body: JSON.stringify({ balance: Number(val) })
+      });
+    }
+
+    async function adjustCommission(userId, currentComm) {
+      const val = prompt(`Nouveau montant de commissions pour ${userId} (actuel : ${currentComm}) :`, currentComm);
+      if (val === null || isNaN(Number(val))) return;
+      await fetch(`${DB_BASE}/users/${userId}.json`, {
+        method: "PATCH",
+        body: JSON.stringify({ commission: Number(val) })
+      });
+    }
+
+    async function toggleSuspend(userId, currentlySuspended) {
+      await fetch(`${DB_BASE}/users/${userId}.json`, {
+        method: "PATCH",
+        body: JSON.stringify({ suspended: !currentlySuspended })
+      });
+    }
+
+    async function deleteUserAccount(userId, loginName) {
+      const ok = confirm(`Supprimer définitivement le compte "${loginName}" ?`);
+      if (!ok) return;
+      await fetch(`${DB_BASE}/users/${userId}.json`, { method: "DELETE" });
+    }
+
+    function switchTab(id, btn) {
+      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      btn.classList.add("active");
+    }
+
+    function initRealtime() {
+      const badge = document.getElementById("dirStatus");
+
+      fetch(`${DB_BASE}/config.json`)
+        .then(r => r.json())
+        .then(d => {
+          if (d) fillConfigForm(d);
+          badge.textContent = "Connecté à Firebase";
+        })
+        .catch(() => {
+          badge.textContent = "Erreur connexion";
+        });
+
+      const depStream = new EventSource(`${DB_BASE}/deposits.json`);
+      depStream.addEventListener("put", () => {
+        fetch(`${DB_BASE}/deposits.json`).then(r => r.json()).then(renderDeposits);
+      });
+      depStream.addEventListener("patch", () => {
+        fetch(`${DB_BASE}/deposits.json`).then(r => r.json()).then(renderDeposits);
+      });
+
+      const userStream = new EventSource(`${DB_BASE}/users.json`);
+      userStream.addEventListener("put", () => {
+        fetch(`${DB_BASE}/users.json`).then(r => r.json()).then(renderUsers);
+      });
+      userStream.addEventListener("patch", () => {
+        fetch(`${DB_BASE}/users.json`).then(r => r.json()).then(renderUsers);
+      });
+
+      const wdStream = new EventSource(`${DB_BASE}/withdrawals.json`);
+      wdStream.addEventListener("put", () => {
+        fetch(`${DB_BASE}/withdrawals.json`).then(r => r.json()).then(renderWithdrawals);
+      });
+      wdStream.addEventListener("patch", () => {
+        fetch(`${DB_BASE}/withdrawals.json`).then(r => r.json()).then(renderWithdrawals);
+      });
+    }
+
+    initRealtime();
+  </script>
+</body>
+</html>
